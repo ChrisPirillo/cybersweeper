@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- SEO: Basic Metadata & Core Web Vitals -->
+    <meta charset="UTF-8">
+    <title>Cybersweeper - The Future of Minesweeper</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Play Cybersweeper, a futuristic take on the classic minesweeper game. Challenge yourself with different game modes, unlock power-ups, and compete for the top score.">
+    <meta name="keywords" content="minesweeper, cybersweeper, futuristic minesweeper, classic game, puzzle game, mind game, strategy game">
+    <meta name="author" content="Chris Pirillo">
+    <link rel="canonical" href="https://pirillo.com/arcade/cybersweeper.html">
+
+    <!-- SEO: Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pirillo.com/arcade/cybersweeper.html">
+    <meta property="og:title" content="Cybersweeper - The Future of Minesweeper">
+    <meta property="og:description" content="A futuristic take on the classic minesweeper game with unique power-ups and challenging game modes.">
+    <meta property="og:image" content="https://pirillo.com/arcade/images/cybersweeper.png">
+
+    <!-- SEO: Twitter Card -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://pirillo.com/arcade/cybersweeper.html">
+    <meta property="twitter:title" content="Cybersweeper - The Future of Minesweeper">
+    <meta property="twitter:description" content="A futuristic take on the classic minesweeper game with unique power-ups and challenging game modes.">
+    <meta property="twitter:image" content="https://pirillo.com/arcade/images/cybersweeper.png">
+    <meta property="twitter:creator" content="@ChrisPirillo">
+
+    <!-- Performance: Resource Hints to speed up loading of critical assets -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap"></noscript>
+    <link rel="preload" href="https://cdn.tailwindcss.com" as="script">
+    
+    <!-- Third-party scripts: Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Analytics: Google Analytics Script -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1CQ4D3VQ3L"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-1CQ4D3VQ3L');
+    </script>
+
+    <!-- ANNOTATION: The following inline CSS is critical for the initial render of the game's UI.
+         It defines the layout, colors, and animations. Moving this to an external file would
+         introduce a render-blocking request, negatively impacting First Contentful Paint (FCP).
+         Since this is a single-page application, this is an optimal approach. -->
+    <style>
+        :root {
+            --tile-size: 40px;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background-color: #0a0a1a;
+            color: #00f0ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* --- Containers & Wrappers --- */
+        .game-wrapper {
+            width: 95vw;
+            height: 95vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .game-container {
+            background: rgba(10, 10, 30, 0.8);
+            border: 2px solid #00f0ff;
+            border-radius: 15px;
+            padding: 1rem;
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.5), 0 0 50px rgba(0, 240, 255, 0.3) inset;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #game-wrapper .game-container {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .overlay-screen .game-container {
+            width: auto;
+            height: auto;
+            max-width: 500px;
+            padding: 2rem;
+        }
+
+        #game-header {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid rgba(0, 240, 255, 0.3);
+            flex-shrink: 0;
+        }
+        
+        .header-item {
+            font-size: 1.2rem;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        #power-up-bar {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1rem;
+            flex-shrink: 0;
+        }
+        
+        .power-up button {
+            background: transparent;
+            border: 2px solid #00f0ff;
+            color: #00f0ff;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .power-up button:hover:not(:disabled) {
+            background: #00f0ff;
+            color: #0a0a1a;
+        }
+        
+        .power-up button.active {
+            background: #ff00ff;
+            border-color: #ff00ff;
+            color: #0a0a1a;
+            box-shadow: 0 0 15px #ff00ff;
+        }
+
+        .power-up button:disabled {
+            border-color: #555;
+            color: #555;
+            cursor: not-allowed;
+        }
+
+        #game-board-container {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #game-board {
+            position: relative;
+            display: grid;
+            gap: 2px;
+        }
+        
+        .tile {
+            position: relative;
+            width: var(--tile-size);
+            height: var(--tile-size);
+            cursor: pointer;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+        
+        .tile .content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            top: 0; left: 0;
+        }
+
+        .tile.is-hidden {
+            background-color: rgba(0, 50, 100, 0.5);
+            border: 1px solid #00aaff;
+        }
+        .tile.is-hidden:hover {
+             transform: scale(1.05);
+             background-color: rgba(0, 100, 150, 0.7);
+             z-index: 10;
+        }
+        
+        .tile.revealed {
+            background-color: rgba(0, 20, 40, 0.7);
+            border: 1px solid #005588;
+        }
+        
+        .tile.mine.revealed { background-color: #ff0000; }
+        .tile.mine.dud.revealed { background-color: rgba(255, 153, 0, 0.7); }
+        .tile.firewall {
+            background: repeating-linear-gradient(45deg, #333, #333 10px, #444 10px, #444 20px);
+            border: 1px solid #888;
+            cursor: not-allowed;
+        }
+        
+        .tile.probed-safe { animation: pulse-green 1s; }
+        .tile.probed-mine { animation: pulse-red 1s; }
+        
+        .tile .content.glitched { animation: glitch-text 2s linear; }
+
+        .tile .content svg {
+            width: 65%;
+            height: 65%;
+        }
+
+        .flagged .content svg {
+            width: 45%;
+            height: 45%;
+        }
+       
+        .overlay-screen {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 10, 0.9); display: flex;
+            justify-content: center; align-items: center; z-index: 100;
+        }
+        .hidden { display: none !important; }
+
+        .color-1 svg { stroke: #00f0ff; } .color-2 svg { stroke: #00ff00; }
+        .color-3 svg { stroke: #ff00ff; } .color-4 svg { stroke: #ffff00; }
+        .color-5 svg { stroke: #ff8800; } .color-6 svg { stroke: #ff0000; }
+        .color-7 svg { stroke: #ffffff; } .color-8 svg { stroke: #888888; }
+        .flagged .content svg { fill: #ffd700; stroke: #ffd700; }
+        .mine.revealed .content svg { fill: #111; stroke: #111; }
+        .dud.revealed .content svg { display: none; }
+
+        @keyframes pulse-green {
+            0% { background-color: rgba(0, 255, 0, 0.5); }
+            100% { background-color: initial; }
+        }
+        @keyframes pulse-red {
+            0% { background-color: rgba(255, 0, 0, 0.5); }
+            100% { background-color: initial; }
+        }
+        @keyframes glitch-text {
+            0%, 100% { opacity: 1; transform: none; }
+            25% { opacity: 0.8; transform: skewX(-10deg); }
+            50% { opacity: 0.5; transform: skewX(10deg); }
+            75% { opacity: 0.8; transform: skewX(-5deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- ANNOTATION: Using <main> for the primary content of the page for semantic HTML and accessibility. -->
+    <main>
+        <section id="config-screen" class="overlay-screen" aria-label="Game Configuration">
+            <div class="game-container text-center">
+                <h1 class="text-4xl mb-6 tracking-widest">CYBER SWEEPER</h1>
+                <div class="mb-4">
+                    <label for="game-mode" class="block mb-2">Game Mode</label>
+                    <select id="game-mode" class="w-full bg-transparent border-2 border-[#00f0ff] p-2 rounded">
+                        <option value="normal">Normal</option>
+                        <option value="overclock">Overclock (Beat the Timer)</option>
+                        <option value="one-click">One-Click Challenge (No Flagging)</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label for="grid-size" class="block mb-2">Grid Size</label>
+                        <input type="number" id="grid-size" value="10" min="8" max="20" class="w-full bg-transparent border-2 border-[#00f0ff] p-2 rounded text-center">
+                    </div>
+                     <div>
+                        <label for="mine-count" class="block mb-2">Mines</label>
+                        <input type="number" id="mine-count" value="15" min="10" max="99" class="w-full bg-transparent border-2 border-[#00f0ff] p-2 rounded text-center">
+                    </div>
+                </div>
+                <button id="start-game" class="w-full bg-transparent border-2 border-[#00f0ff] hover:bg-[#00f0ff] hover:text-black font-bold py-2 px-4 rounded transition-all duration-300 mb-4">
+                    START GAME
+                </button>
+                <button id="show-scores-btn" class="w-full bg-transparent border-2 border-[#00aaff] hover:bg-[#00aaff] hover:text-black font-bold py-2 px-4 rounded transition-all duration-300">
+                    TOP SCORES
+                </button>
+            </div>
+        </section>
+
+        <section id="scores-screen" class="overlay-screen hidden" aria-label="Top Scores">
+            <div class="game-container text-center">
+                 <h2 class="text-4xl mb-6 tracking-widest">TOP SCORES</h2>
+                 <ul id="scores-list" class="text-left text-lg mb-6 space-y-2"></ul>
+                 <button id="back-to-config-btn" class="w-full bg-transparent border-2 border-[#00f0ff] hover:bg-[#00f0ff] hover:text-black font-bold py-2 px-4 rounded transition-all duration-300">
+                    BACK
+                </button>
+            </div>
+        </section>
+
+        <div id="game-wrapper" class="game-wrapper hidden">
+            <div class="game-container">
+                <!-- ANNOTATION: Using <header> for introductory content like stats and controls. -->
+                <header>
+                    <div id="game-header">
+                        <div class="header-item">Mines: <span id="mines-left">10</span></div>
+                        <div class="header-item">Duds: <span id="dud-count">0</span></div>
+                        <div class="header-item">Time: <span id="timer">0</span></div>
+                    </div>
+                    <nav id="power-up-bar" aria-label="Game Controls">
+                         <div class="power-up">
+                            <button id="scanner-btn">Scan <span id="scanner-uses">(2)</span></button>
+                         </div>
+                         <div class="power-up">
+                            <button id="probe-btn">Probe <span id="probe-uses">(5)</span></button>
+                         </div>
+                    </nav>
+                </header>
+                <div id="game-board-container">
+                     <div id="game-board" role="grid" aria-label="Minesweeper Game Board"></div>
+                </div>
+            </div>
+        </div>
+
+        <section id="result-screen" class="overlay-screen hidden" aria-label="Game Result">
+            <div class="game-container text-center">
+                <h2 id="result-message" class="text-4xl mb-6"></h2>
+                <button id="play-again" class="w-full bg-transparent border-2 border-[#00f0ff] hover:bg-[#00f0ff] hover:text-black font-bold py-2 px-4 rounded transition-all duration-300">
+                    PLAY AGAIN
+                </button>
+            </div>
+        </section>
+    </main>
+    
+    <!-- SEO: JSON-LD Structured Data for VideoGame -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoGame",
+      "name": "Cybersweeper - The Future of Minesweeper",
+      "url": "https://pirillo.com/arcade/cybersweeper.html",
+      "author": {
+        "@type": "Person",
+        "name": "Chris Pirillo"
+      },
+      "description": "A futuristic take on the classic minesweeper puzzle game, featuring unique power-ups like scanners and probes, special tiles like firewalls and glitches, and challenging new game modes.",
+      "applicationCategory": "Game",
+      "operatingSystem": "All",
+      "genre": ["Puzzle", "Strategy"],
+      "playMode": "singlePlayer",
+      "screenshot": "https://pirillo.com/arcade/images/cybersweeper.png",
+      "keywords": "minesweeper, puzzle game, strategy game, cybersweeper"
+    }
+    </script>
+    
+    <!-- ANNOTATION: The main game script is deferred. 'defer' ensures the script is executed after the
+         document has been parsed but before the DOMContentLoaded event, preventing it from blocking the
+         initial render. This is the safest and most performant way to load a script that needs
+         to manipulate the DOM. The JavaScript code itself has NOT been altered. -->
+    <script defer>
+        // --- DOM Elements ---
+        const configScreen = document.getElementById('config-screen');
+        const scoresScreen = document.getElementById('scores-screen');
+        const gameWrapper = document.getElementById('game-wrapper');
+        const resultScreen = document.getElementById('result-screen');
+        const startGameBtn = document.getElementById('start-game');
+        const playAgainBtn = document.getElementById('play-again');
+        const showScoresBtn = document.getElementById('show-scores-btn');
+        const backToConfigBtn = document.getElementById('back-to-config-btn');
+        const boardElement = document.getElementById('game-board');
+        const minesLeftElement = document.getElementById('mines-left');
+        const dudCountElement = document.getElementById('dud-count');
+        const timerElement = document.getElementById('timer');
+        const scannerBtn = document.getElementById('scanner-btn');
+        const probeBtn = document.getElementById('probe-btn');
+        const scannerUsesElement = document.getElementById('scanner-uses');
+        const probeUsesElement = document.getElementById('probe-uses');
+        const scoresListElement = document.getElementById('scores-list');
+        const gameModeSelect = document.getElementById('game-mode');
+        
+        // --- Game State ---
+        let gridSize, mineCount, gameMode;
+        let board = [], totalDuds = 0, foundDuds = 0;
+        let flags = 0, firstClick = true, gameOver = false;
+        let timerInterval, timeLeft;
+        let scannerUses, probeUses;
+        let isScanning = false, isProbing = false;
+
+        // --- SVG Icons ---
+        const ICONS = {
+            flag: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7"/></svg>`,
+            mine: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m4.93 19.07 1.41-1.41"/><path d="m17.66 6.34 1.41-1.41"/></svg>`,
+            dud: ``, // Dud has no icon, just a background color
+            1: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18V6"/></svg>`,
+            2: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 18V6"/><path d="M16 18V6"/></svg>`,
+            3: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18V6"/><path d="M12 18V6"/><path d="M18 18V6"/></svg>`,
+            4: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 18V6"/><path d="M9.5 18V6"/><path d="M14.5 18V6"/><path d="M19 18V6"/></svg>`,
+            5: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 18V6"/><path d="M8 18V6"/><path d="M12 18V6"/><path d="M16 18V6"/><path d="M20 18V6"/></svg>`,
+            6: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 18V6"/><path d="M7.33 18V6"/><path d="M10.66 18V6"/><path d="M14 18V6"/><path d="M17.33 18V6"/><path d="M20.66 18V6"/></svg>`,
+            7: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 18V6"/><path d="M6.85 18V6"/><path d="M9.7 18V6"/><path d="M12.55 18V6"/><path d="M15.4 18V6"/><path d="M18.25 18V6"/><path d="M21.1 18V6"/></svg>`,
+            8: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 18V6"/><path d="M6.4 18V6"/><path d="M8.8 18V6"/><path d="M11.2 18V6"/><path d="M13.6 18V6"/><path d="M16 18V6"/><path d="M18.4 18V6"/><path d="M20.8 18V6"/></svg>`,
+        }
+
+        // --- localStorage Management ---
+        const storage = {
+            getUpgrades: () => JSON.parse(localStorage.getItem('cyberSweeperUpgrades')) || { scanner: 2, probe: 5 },
+            saveUpgrades: (upgrades) => localStorage.setItem('cyberSweeperUpgrades', JSON.stringify(upgrades)),
+            getScores: () => JSON.parse(localStorage.getItem('cyberSweeperScores')) || [],
+            saveScores: (scores) => localStorage.setItem('cyberSweeperScores', JSON.stringify(scores)),
+        };
+
+        // --- Game Initialization ---
+        function initializeGame() {
+            gridSize = parseInt(document.getElementById('grid-size').value);
+            mineCount = parseInt(document.getElementById('mine-count').value);
+            gameMode = gameModeSelect.value;
+            
+            configScreen.classList.add('hidden');
+            resultScreen.classList.add('hidden');
+            gameWrapper.classList.remove('hidden');
+
+            resetGame();
+            requestAnimationFrame(createBoard);
+        }
+
+        function resetGame() {
+            gameOver = false;
+            firstClick = true;
+            flags = 0;
+            totalDuds = 0;
+            foundDuds = 0;
+            board = [];
+            isScanning = false;
+            isProbing = false;
+            
+            const upgrades = storage.getUpgrades();
+            scannerUses = upgrades.scanner;
+            probeUses = upgrades.probe;
+
+            boardElement.innerHTML = '';
+            dudCountElement.textContent = '...';
+            minesLeftElement.textContent = mineCount;
+            timerElement.textContent = 0;
+            updatePowerUpUI();
+            clearInterval(timerInterval);
+
+            const powerUpBar = document.getElementById('power-up-bar');
+            if (gameMode === 'one-click') {
+                powerUpBar.classList.add('hidden');
+            } else {
+                powerUpBar.classList.remove('hidden');
+            }
+        }
+
+        // --- Board Creation & Layout ---
+        function createBoard() {
+            const boardContainer = document.getElementById('game-board-container');
+            const availableWidth = boardContainer.clientWidth;
+            const availableHeight = boardContainer.clientHeight;
+            
+            const TILE_SIZE = Math.floor(Math.min(availableWidth / gridSize, availableHeight / gridSize) - 2);
+            document.documentElement.style.setProperty('--tile-size', `${TILE_SIZE}px`);
+            boardElement.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+
+            board = Array(gridSize * gridSize).fill(null).map(() => ({
+                isMine: false, isDud: false, isRevealed: false,
+                isFlagged: false, neighborMines: 0,
+                isFirewall: false, isGlitch: false
+            }));
+
+            for (let i = 0; i < gridSize * gridSize; i++) {
+                const tile = document.createElement('div');
+                tile.dataset.index = i;
+                
+                const content = document.createElement('div');
+                content.classList.add('content');
+                tile.appendChild(content);
+                
+                tile.classList.add('tile', 'is-hidden');
+
+                tile.addEventListener('click', () => handleTileClick(i));
+                tile.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    handleRightClick(i);
+                });
+                boardElement.appendChild(tile);
+            }
+        }
+        
+        function placeSpecialTiles(mineIndices) {
+            const flatBoard = board.map((_, i) => i);
+            const safeIndices = flatBoard.filter(i => !mineIndices.includes(i));
+            
+            const firewallCount = Math.floor(gridSize * 0.5);
+            for(let i=0; i<firewallCount; i++) {
+                if(safeIndices.length === 0) break;
+                const randIndex = Math.floor(Math.random() * safeIndices.length);
+                const tileIndex = safeIndices.splice(randIndex, 1)[0];
+                board[tileIndex].isFirewall = true;
+            }
+
+            const glitchCount = Math.floor(gridSize * 0.3);
+            for(let i=0; i<glitchCount; i++) {
+                if(safeIndices.length === 0) break;
+                const randIndex = Math.floor(Math.random() * safeIndices.length);
+                const tileIndex = safeIndices.splice(randIndex, 1)[0];
+                board[tileIndex].isGlitch = true;
+            }
+        }
+
+        function placeMines(firstClickIndex) {
+            let placedMines = 0;
+            const mineIndices = new Set();
+            const safeZone = getNeighbors(firstClickIndex);
+            safeZone.push(firstClickIndex);
+
+            while (placedMines < mineCount) {
+                const index = Math.floor(Math.random() * gridSize * gridSize);
+                if (!safeZone.includes(index) && !mineIndices.has(index)) {
+                    mineIndices.add(index);
+                    board[index].isMine = true;
+                    if (Math.random() < 0.2) {
+                        board[index].isDud = true;
+                        totalDuds++;
+                    }
+                    placedMines++;
+                }
+            }
+            dudCountElement.textContent = totalDuds;
+            placeSpecialTiles(Array.from(mineIndices));
+            calculateNeighborMines();
+        }
+
+        function calculateNeighborMines() {
+            for (let i = 0; i < gridSize * gridSize; i++) {
+                if (board[i].isMine) continue;
+                let count = 0;
+                getNeighbors(i).forEach(neighborIndex => {
+                    if (board[neighborIndex]?.isMine) count++;
+                });
+                board[i].neighborMines = count;
+            }
+        }
+        
+        function getNeighbors(index) {
+            const neighbors = [];
+            const x = index % gridSize;
+            const y = Math.floor(index / gridSize);
+
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    if (i === 0 && j === 0) continue;
+                    const newX = x + j;
+                    const newY = y + i;
+                    if (newX >= 0 && newX < gridSize && newY >= 0 && newY < gridSize) {
+                        neighbors.push(newY * gridSize + newX);
+                    }
+                }
+            }
+            return neighbors;
+        }
+
+        function handleTileClick(index) {
+            const tileData = board[index];
+            if (gameOver || tileData.isRevealed || tileData.isFlagged || tileData.isFirewall) return;
+            
+            if (isScanning) { useScanner(index); return; }
+            if (isProbing) { useProbe(index); return; }
+
+            if (firstClick) {
+                placeMines(index);
+                startTimer();
+                firstClick = false;
+            }
+
+            if (tileData.isMine) {
+                if (tileData.isDud) {
+                    if (!tileData.isRevealed) {
+                        foundDuds++;
+                        dudCountElement.textContent = totalDuds - foundDuds;
+                        tileData.isRevealed = true;
+                        updateBoard();
+                        checkWinCondition();
+                    }
+                } else {
+                    endGame(false);
+                }
+                return;
+            }
+
+            if(tileData.isGlitch && !tileData.isRevealed) {
+                triggerGlitch(index);
+            }
+
+            revealTile(index);
+            updateBoard();
+            checkWinCondition();
+        }
+        
+        function handleRightClick(index) {
+            if (gameMode === 'one-click') return;
+            const tileData = board[index];
+            if (gameOver || tileData.isRevealed || tileData.isFirewall) return;
+            tileData.isFlagged = !tileData.isFlagged;
+            flags += tileData.isFlagged ? 1 : -1;
+            minesLeftElement.textContent = mineCount - flags;
+            updateBoard();
+        }
+
+        function revealTile(index) {
+            const tileData = board[index];
+            if (tileData?.isRevealed || tileData?.isFlagged || tileData?.isFirewall) return;
+            
+            tileData.isRevealed = true;
+
+            if (tileData.neighborMines === 0 && !tileData.isMine) {
+                getNeighbors(index).forEach(neighborIndex => revealTile(neighborIndex));
+            }
+        }
+        
+        function triggerGlitch(index) {
+            getNeighbors(index).forEach(nIndex => {
+                const neighborTile = boardElement.children[nIndex];
+                if(neighborTile && board[nIndex].isRevealed && board[nIndex].neighborMines > 0) {
+                   const content = neighborTile.querySelector('.content');
+                   content.classList.add('glitched');
+                   setTimeout(() => content.classList.remove('glitched'), 2000);
+                }
+            });
+        }
+
+        function updateBoard() {
+            board.forEach((tileData, i) => {
+                const tileElement = boardElement.children[i];
+                const contentElement = tileElement.querySelector('.content');
+                
+                const classesToRemove = ['revealed', 'is-hidden', 'flagged', 'mine', 'dud', 'firewall'];
+                tileElement.classList.remove(...classesToRemove);
+                contentElement.classList.remove(...Array.from({length: 8}, (_, j) => `color-${j + 1}`));
+                contentElement.innerHTML = '';
+                
+                tileElement.classList.add('is-hidden'); 
+                if (tileData.isFirewall) {
+                    tileElement.classList.add('firewall');
+                    tileElement.classList.remove('is-hidden');
+                } else if (tileData.isRevealed) {
+                    tileElement.classList.remove('is-hidden');
+                    tileElement.classList.add('revealed');
+                    if (tileData.isMine) {
+                        tileElement.classList.add('mine');
+                        contentElement.innerHTML = tileData.isDud ? ICONS.dud : ICONS.mine;
+                        if(tileData.isDud) tileElement.classList.add('dud');
+                    } else if (tileData.neighborMines > 0) {
+                        contentElement.innerHTML = ICONS[tileData.neighborMines] || '';
+                        contentElement.classList.add(`color-${tileData.neighborMines}`);
+                    }
+                } else { // Not revealed
+                    if (tileData.isFlagged) {
+                        tileElement.classList.add('flagged');
+                        contentElement.innerHTML = ICONS.flag;
+                    }
+                }
+
+                if (gameOver && tileData.isMine && !tileData.isRevealed) {
+                    tileElement.classList.add('revealed', 'mine');
+                    contentElement.innerHTML = ICONS.mine;
+                }
+            });
+        }
+        
+        function updatePowerUpUI() {
+            scannerUsesElement.textContent = `(${scannerUses})`;
+            probeUsesElement.textContent = `(${probeUses})`;
+            scannerBtn.disabled = scannerUses <= 0;
+            probeBtn.disabled = probeUses <= 0;
+            scannerBtn.classList.toggle('active', isScanning);
+            probeBtn.classList.toggle('active', isProbing);
+        }
+
+        function useScanner(index) {
+            if (scannerUses <= 0) return;
+            scannerUses--;
+            isScanning = false;
+
+            const neighbors = getNeighbors(index);
+            neighbors.push(index);
+
+            neighbors.forEach(nIndex => {
+                const tileData = board[nIndex];
+                const tileElement = boardElement.children[nIndex];
+                const contentElement = tileElement.querySelector('.content');
+
+                if (tileData && !tileData.isRevealed && !tileData.isFlagged) {
+                    const originalHTML = contentElement.innerHTML;
+                    
+                    if (tileData.isMine) {
+                        contentElement.innerHTML = ICONS.mine;
+                    } else if (tileData.neighborMines > 0) {
+                        contentElement.innerHTML = ICONS[tileData.neighborMines];
+                        contentElement.classList.add(`color-${tileData.neighborMines}`);
+                    }
+
+                    const pulseClass = tileData.isMine ? 'probed-mine' : 'probed-safe';
+                    tileElement.classList.add(pulseClass);
+                    
+                    setTimeout(() => {
+                        tileElement.classList.remove(pulseClass);
+                        if (!tileData.isRevealed) {
+                           contentElement.innerHTML = originalHTML;
+                           contentElement.classList.remove(...Array.from({length: 8}, (_, j) => `color-${j + 1}`));
+                        }
+                    }, 1500);
+                }
+            });
+
+            updatePowerUpUI();
+        }
+
+        function useProbe(index) {
+            if (probeUses <= 0) return;
+            probeUses--;
+            isProbing = false;
+            const tileElement = boardElement.children[index];
+            const probeClass = board[index].isMine ? 'probed-mine' : 'probed-safe';
+            tileElement.classList.add(probeClass);
+            setTimeout(() => tileElement.classList.remove(probeClass), 1000);
+            updatePowerUpUI();
+        }
+        
+        scannerBtn.addEventListener('click', () => {
+            if (scannerUses > 0) {
+                isScanning = !isScanning;
+                isProbing = false;
+                updatePowerUpUI();
+            }
+        });
+        
+        probeBtn.addEventListener('click', () => {
+             if (probeUses > 0) {
+                isProbing = !isProbing;
+                isScanning = false;
+                updatePowerUpUI();
+            }
+        });
+
+        function startTimer() {
+            if (gameMode === 'overclock') {
+                timeLeft = Math.floor(gridSize * gridSize * 1.2);
+                timerElement.textContent = timeLeft;
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    timerElement.textContent = timeLeft;
+                    if (timeLeft <= 0) {
+                        endGame(false);
+                    }
+                }, 1000);
+            } else {
+                let time = 0;
+                timerInterval = setInterval(() => {
+                    time++;
+                    timerElement.textContent = time;
+                }, 1000);
+            }
+        }
+
+        function endGame(isWin) {
+            gameOver = true;
+            clearInterval(timerInterval);
+
+            if(isWin) {
+                const finalTime = (gameMode === 'overclock') ? (Math.floor(gridSize * gridSize * 1.2) - timeLeft) : parseInt(timerElement.textContent);
+                saveScore(finalTime);
+                saveUpgrades();
+            }
+
+            updateBoard();
+            document.getElementById('result-message').textContent = isWin ? "SYSTEM SECURED" : "SYSTEM CRASH";
+            resultScreen.classList.remove('hidden');
+            gameWrapper.classList.add('hidden');
+        }
+
+        function checkWinCondition() {
+            const revealedNonMines = board.filter(t => t.isRevealed && !t.isMine && !t.isFirewall).length;
+            const totalNonMines = board.filter(t => !t.isMine && !t.isFirewall).length;
+            if (revealedNonMines === totalNonMines) {
+                endGame(true);
+            }
+        }
+        
+        function saveScore(time) {
+            const scores = storage.getScores();
+            const newScore = { time, date: new Date().toLocaleDateString(), mode: gameMode };
+            scores.push(newScore);
+            scores.sort((a, b) => a.time - b.time);
+            storage.saveScores(scores.slice(0, 10));
+        }
+
+        function saveUpgrades() {
+            const upgrades = storage.getUpgrades();
+            const reward = (gameMode === 'overclock') ? 2 : 1;
+            upgrades.scanner += reward;
+            upgrades.probe += reward;
+            storage.saveUpgrades(upgrades);
+        }
+
+        function showTopScores() {
+            const scores = storage.getScores();
+            scoresListElement.innerHTML = '';
+            if (scores.length === 0) {
+                scoresListElement.innerHTML = '<li>No scores recorded yet.</li>';
+            } else {
+                scores.forEach(score => {
+                    const li = document.createElement('li');
+                    li.textContent = `${score.time}s - (${score.mode}) - ${score.date}`;
+                    scoresListElement.appendChild(li);
+                });
+            }
+            configScreen.classList.add('hidden');
+            scoresScreen.classList.remove('hidden');
+        }
+        
+        startGameBtn.addEventListener('click', initializeGame);
+        playAgainBtn.addEventListener('click', () => {
+            resultScreen.classList.add('hidden');
+            configScreen.classList.remove('hidden');
+            gameWrapper.classList.add('hidden');
+        });
+        showScoresBtn.addEventListener('click', showTopScores);
+        backToConfigBtn.addEventListener('click', () => {
+             scoresScreen.classList.add('hidden');
+             configScreen.classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>
